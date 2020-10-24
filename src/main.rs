@@ -14,24 +14,24 @@ impl Truth {
 
 struct Condition {
     name: String,
-    expr: Box<dyn Fn() -> Truth>,
+    expr: Box<dyn Fn(String) -> Truth>,
 }
 
 impl Condition {
     fn eval(&self) -> Truth {
-        (*self.expr)() 
+        (*self.expr)(self.name.to_string()) 
     }
 
     fn new(n: String, e: Box<dyn Fn() -> bool>) -> Condition {
         Condition {
-            name: n.to_string(),
-            expr: Box::new(move || {
+            name: n,
+            expr: Box::new(move |n| {
                 match e()
                 {
                     true => Truth::new(true),
                     false => Truth {
                         value: false,
-                        trace: Some(vec![n.to_string()])
+                        trace: Some(vec![n])
                     }
                 }})
         }
@@ -40,9 +40,9 @@ impl Condition {
     fn and(self, other: Condition) -> Condition {
         Condition {
             name: format!("{} and {}", self.name, other.name),
-            expr: Box::new(move || {
+            expr: Box::new(move |n| {
                 if let Truth { value: false, trace: Some(mut t) } = self.eval() {
-                    t.push(format!("{} and {}", self.name, other.name));
+                    t.push(n);
                     return Truth {
                         value: false,
                         trace: Some(t)
@@ -50,7 +50,7 @@ impl Condition {
                 }
 
                 if let Truth { value: false, trace: Some(mut t) } = other.eval() {
-                    t.push(format!("{} and {}", self.name, other.name));
+                    t.push(n);
                     return Truth {
                         value: false,
                         trace: Some(t)
